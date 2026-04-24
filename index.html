@@ -139,9 +139,38 @@ tbody td{padding:7px 10px;border-bottom:1px solid #F0F0F0;color:#444;white-space
 .rep.vermelho{background:#FDECEA;color:var(--red)}
 .rep.cinza{background:#F0F0F0;color:#666}
 
+/* ── SELLER GRID ── */
+.seller-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px}
+.seller-card{background:var(--white);border-radius:10px;padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:all .18s;border-top:3px solid var(--blue);position:relative}
+.seller-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.13)}
+.seller-card.ok{border-top-color:var(--green)}
+.seller-card.warn{border-top-color:var(--orange)}
+.seller-card.danger{border-top-color:var(--red)}
+.seller-card.neutral{border-top-color:#ccc}
+.sc-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sc-nome{font-weight:700;font-size:12px;color:#222;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.sc-id{font-size:9px;color:#bbb;margin-top:1px}
+.sc-metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.sc-metric{background:#F8F8F8;border-radius:6px;padding:6px 8px}
+.sc-metric .lbl{font-size:9px;color:#999;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.sc-metric .val{font-size:13px;font-weight:800;color:#222;margin-top:1px}
+.sc-var{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;margin-top:2px}
+.sc-var.up{background:#E6F9EE;color:var(--green)}
+.sc-var.down{background:#FDECEA;color:var(--red)}
+.sc-var.flat{background:#F0F0F0;color:#888}
+.sc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #F0F0F0}
+.sc-alert-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;background:#FDECEA;color:var(--red)}
+.sc-alert-tag.warn{background:#FFF0E0;color:var(--orange)}
+.sc-alert-tag.ok{background:#E6F9EE;color:var(--green)}
+
 /* ── EMPTY STATE ── */
 .empty{text-align:center;padding:40px;color:#bbb;font-size:13px}
 .empty .emoji{font-size:32px;display:block;margin-bottom:8px}
+/* ── NO DATA BANNER ── */
+.no-data-banner{background:#FFF9E6;border:2px dashed var(--yellow);border-radius:10px;padding:24px;text-align:center;margin-bottom:20px}
+.no-data-banner b{font-size:14px;color:#333;display:block;margin-bottom:6px}
+.no-data-banner code{background:#F0F0F0;padding:3px 8px;border-radius:4px;font-size:12px;color:#555}
 
 /* ── FOOTER ── */
 #footer{position:fixed;bottom:0;left:var(--sidebar-w);right:0;height:32px;background:#fff;border-top:1px solid var(--gray);display:flex;align-items:center;padding:0 20px;font-size:10px;color:#aaa;gap:16px;z-index:80}
@@ -202,6 +231,7 @@ tbody td{padding:7px 10px;border-bottom:1px solid #F0F0F0;color:#444;white-space
     </div>
     <div class="tab-bar">
       <div class="tab active" onclick="showTab('ct','geral',this)">Geral</div>
+      <div class="tab" onclick="showTab('ct','grade',this)">Grade de Sellers</div>
       <div class="tab" onclick="showTab('ct','alertas',this)">🚨 Alertas do Dia</div>
       <div class="tab" onclick="showTab('ct','full',this)">Full & Logística</div>
       <div class="tab" onclick="showTab('ct','ads',this)">ADS</div>
@@ -224,6 +254,15 @@ tbody td{padding:7px 10px;border-bottom:1px solid #F0F0F0;color:#444;white-space
         <div class="card-title">GMV por Seller — MTD <span class="hint">ordenado por GMV</span></div>
         <div class="chart-wrap-lg"><canvas id="chart-ct-gmv-sellers"></canvas></div>
       </div>
+    </div>
+    <!-- Grade -->
+    <div class="tab-content" id="ct-grade">
+      <div id="ct-grade-search" style="margin-bottom:14px;display:flex;gap:10px;align-items:center">
+        <input id="grade-search-input" type="text" placeholder="🔍  Buscar seller..." oninput="filterGrade(this.value)"
+          style="padding:7px 12px;border:1.5px solid var(--gray);border-radius:20px;font-size:12px;width:240px;outline:none">
+        <span style="font-size:11px;color:#aaa" id="grade-count"></span>
+      </div>
+      <div class="seller-grid" id="ct-grade-grid"></div>
     </div>
     <!-- Alertas -->
     <div class="tab-content" id="ct-alertas">
@@ -1133,9 +1172,93 @@ function renderSellerAds(sid) {
   }
 }
 
+// ── RENDER GRADE DE SELLERS ──
+function renderCarteiraGrade() {
+  const sellers = D.sellers || {};
+  const alertasMap = {};
+  ((D.carteira || {}).alertas || []).forEach(a => {
+    alertasMap[a.id] = alertasMap[a.id] || [];
+    alertasMap[a.id].push(a);
+  });
+
+  const grid = document.getElementById('ct-grade-grid');
+  const count = document.getElementById('grade-count');
+  if (!SELLERS_CFG.length) {
+    grid.innerHTML = '<div class="empty"><span class="emoji">📊</span>Sem dados. Rode <code>gerar_dash.py</code> primeiro.</div>';
+    return;
+  }
+
+  count.textContent = SELLERS_CFG.length + ' sellers';
+
+  grid.innerHTML = SELLERS_CFG.map(s => {
+    const sd = sellers[s.id] || {};
+    const gmv = sd.gmv_mtd || 0;
+    const gmvOntem = sd.gmv_ontem || 0;
+    const var_d7 = sd.var_d7;
+    const alertas = alertasMap[s.id] || [];
+    const temAlertaAlto = alertas.some(a => a.prioridade === 'alta');
+    const temAlertaMed  = alertas.some(a => a.prioridade === 'media');
+    const repColor = {verde:'green',amarelo:'yellow',laranja:'yellow',vermelho:'red'}[sd.reputacao] || 'gray';
+
+    let cardClass = 'neutral';
+    if (gmv > 0) cardClass = 'ok';
+    if (temAlertaMed) cardClass = 'warn';
+    if (temAlertaAlto) cardClass = 'danger';
+
+    let varHtml = '';
+    if (var_d7 != null) {
+      const cls = var_d7 >= 3 ? 'up' : var_d7 <= -3 ? 'down' : 'flat';
+      varHtml = `<span class="sc-var ${cls}">${var_d7 >= 0 ? '▲' : '▼'} ${Math.abs(var_d7).toFixed(0)}%</span>`;
+    }
+
+    let alertTag = '';
+    if (temAlertaAlto) alertTag = `<span class="sc-alert-tag">⚠ ${alertas.length} alerta${alertas.length>1?'s':''}</span>`;
+    else if (temAlertaMed) alertTag = `<span class="sc-alert-tag warn">⚡ ${alertas.length} alerta${alertas.length>1?'s':''}</span>`;
+    else if (gmv > 0) alertTag = `<span class="sc-alert-tag ok">✓ OK</span>`;
+
+    return `<div class="seller-card ${cardClass}" data-nome="${s.nome.toLowerCase()}" onclick="showView('seller',${s.id})">
+      <div class="sc-header">
+        <span class="sc-dot" style="background:var(--${repColor === 'gray' ? 'gray' : repColor === 'green' ? 'green' : repColor === 'yellow' ? 'orange' : 'red'})"></span>
+        <div style="flex:1;min-width:0">
+          <div class="sc-nome" title="${s.nome}">${s.nome}</div>
+          <div class="sc-id">ID ${s.id}</div>
+        </div>
+      </div>
+      <div class="sc-metrics">
+        <div class="sc-metric">
+          <div class="lbl">GMV MTD</div>
+          <div class="val">${fmt(gmv)}</div>
+        </div>
+        <div class="sc-metric">
+          <div class="lbl">Ontem</div>
+          <div class="val">${fmt(gmvOntem)}</div>
+          ${varHtml}
+        </div>
+      </div>
+      <div class="sc-footer">
+        ${alertTag}
+        <span style="font-size:10px;color:#aaa">→ ver detalhes</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterGrade(q) {
+  const cards = document.querySelectorAll('#ct-grade-grid .seller-card');
+  const term = q.toLowerCase().trim();
+  let visible = 0;
+  cards.forEach(c => {
+    const match = !term || c.dataset.nome.includes(term);
+    c.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('grade-count').textContent = visible + ' sellers';
+}
+
 // ── RENDER CARTEIRA TAB SWITCH ──
 function renderCarteiraTab(section) {
   if (section === 'geral') renderCarteiraGeral();
+  else if (section === 'grade') renderCarteiraGrade();
   else if (section === 'alertas') renderCarteiraAlertas();
   else if (section === 'full') renderCarteiraFull();
   else if (section === 'ads') renderCarteiraAds();
@@ -1147,6 +1270,21 @@ function renderSellerTab(sid, section) {
   else if (section === 'vendas') renderSellerVendas(sid);
   else if (section === 'full') renderSellerFull(sid);
   else if (section === 'ads') renderSellerAds(sid);
+}
+
+// ── BANNER SEM DADOS ──
+function checkNoData() {
+  const semDados = !D.gerado_em;
+  const banner = document.getElementById('no-data-banner');
+  if (semDados && !banner) {
+    const b = document.createElement('div');
+    b.id = 'no-data-banner';
+    b.className = 'no-data-banner';
+    b.innerHTML = `<b>📊 Dashboard ainda sem dados</b>
+      Para popular com dados reais do BigQuery, rode:<br><br>
+      <code>python C:\\Users\\renateixeira\\dash-carteira-renan\\gerar_dash.py</code>`;
+    document.getElementById('main').prepend(b);
+  }
 }
 
 // ── RENDER TUDO ──
@@ -1170,7 +1308,7 @@ function renderAll() {
 }
 
 // ── INIT ──
-document.addEventListener('DOMContentLoaded', renderAll);
+document.addEventListener('DOMContentLoaded', () => { checkNoData(); renderAll(); });
 </script>
 </body>
 </html>
