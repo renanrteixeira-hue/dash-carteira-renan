@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gestão MeliPro | Renan</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+:root {
+  --blue:#3483FA; --yellow:#FFE600; --green:#00A650; --red:#F23D4F;
+  --orange:#FF7733; --purple:#9B59B6; --gray:#EBEBEB; --text:#333;
+  --text2:#666; --sidebar-w:220px; --header-h:56px; --filter-h:48px;
+  --bg:#F5F5F5; --white:#fff; --shadow:0 2px 8px rgba(0,0,0,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+
+/* ── HEADER ── */
+#hdr{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--yellow);display:flex;align-items:center;padding:0 16px;z-index:100;gap:12px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+#hdr .logo{font-weight:800;font-size:17px;color:#333;letter-spacing:-.3px}
+#hdr .logo span{color:var(--blue)}
+#hdr .sep{width:1px;height:24px;background:#00000020}
+#hdr .title{font-size:13px;font-weight:600;color:#444}
+#hdr .badges{margin-left:auto;display:flex;gap:8px;align-items:center}
+#hdr .badge{background:#fff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;color:#444}
+#hdr .badge.green{background:var(--green);color:#fff}
+#hdr .badge.blue{background:var(--blue);color:#fff}
+
+/* ── SIDEBAR ── */
+#sidebar{position:fixed;top:var(--header-h);left:0;bottom:0;width:var(--sidebar-w);background:var(--white);border-right:1px solid var(--gray);overflow-y:auto;z-index:90;padding-bottom:40px}
+#sidebar::-webkit-scrollbar{width:4px}
+#sidebar::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
+.sb-section{padding:8px 0 4px 12px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.8px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;border-radius:0;transition:background .15s;font-size:12px;font-weight:500;color:#444;border-left:3px solid transparent}
+.sb-item:hover{background:#FFF9E6}
+.sb-item.active{background:#FFF3C0;border-left-color:var(--yellow);color:var(--blue);font-weight:700}
+.sb-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.green{background:var(--green)}
+.dot.yellow{background:#F5A623}
+.dot.red{background:var(--red)}
+.dot.gray{background:#bbb}
+.sb-item .sb-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-item .sb-var{font-size:10px;font-weight:700;margin-left:auto;padding:1px 5px;border-radius:3px}
+.sb-var.up{background:#E6F9EE;color:var(--green)}
+.sb-var.down{background:#FDECEA;color:var(--red)}
+
+/* ── FILTER BAR ── */
+#filter-bar{position:fixed;top:var(--header-h);left:var(--sidebar-w);right:0;height:var(--filter-h);background:var(--white);border-bottom:1px solid var(--gray);display:flex;align-items:center;padding:0 20px;gap:8px;z-index:80}
+.pill{padding:4px 12px;border-radius:20px;border:1.5px solid var(--gray);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;color:#666}
+.pill:hover{border-color:var(--blue);color:var(--blue)}
+.pill.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ── MAIN ── */
+#main{margin-left:var(--sidebar-w);margin-top:calc(var(--header-h) + var(--filter-h));padding:20px;min-height:100vh}
+.view{display:none}
+.view.active{display:block}
+
+/* ── PAGE TITLE ── */
+.page-header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.page-header h2{font-size:18px;font-weight:800;color:#222}
+.page-header .sub{font-size:12px;color:#888;font-weight:400}
+
+/* ── TABS ── */
+.tab-bar{display:flex;gap:0;border-bottom:2px solid var(--gray);margin-bottom:20px}
+.tab{padding:9px 18px;cursor:pointer;font-size:12px;font-weight:600;color:#888;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab:hover{color:var(--blue)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ── KPI CARDS ── */
+.kpi-row{display:grid;gap:12px;margin-bottom:20px}
+.kpi-4{grid-template-columns:repeat(4,1fr)}
+.kpi-3{grid-template-columns:repeat(3,1fr)}
+.kpi-5{grid-template-columns:repeat(5,1fr)}
+.kpi-card{background:var(--white);border-radius:10px;padding:16px;box-shadow:var(--shadow);border-top:4px solid var(--blue);position:relative;overflow:hidden}
+.kpi-card.green{border-top-color:var(--green)}
+.kpi-card.red{border-top-color:var(--red)}
+.kpi-card.yellow{border-top-color:var(--yellow)}
+.kpi-card.purple{border-top-color:var(--purple)}
+.kpi-card.orange{border-top-color:var(--orange)}
+.kpi-label{font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-value{font-size:22px;font-weight:800;color:#222;line-height:1.1}
+.kpi-sub{font-size:11px;color:#aaa;margin-top:4px}
+.kpi-var{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;margin-top:6px}
+.kpi-var.up{background:#E6F9EE;color:var(--green)}
+.kpi-var.down{background:#FDECEA;color:var(--red)}
+.kpi-var.flat{background:#F0F0F0;color:#888}
+
+/* ── GRID LAYOUT ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-7-3{display:grid;grid-template-columns:7fr 3fr;gap:16px;margin-bottom:16px}
+.grid-6-4{display:grid;grid-template-columns:6fr 4fr;gap:16px;margin-bottom:16px}
+
+/* ── CARD ── */
+.card{background:var(--white);border-radius:10px;padding:16px;box-shadow:var(--shadow)}
+.card-title{font-size:13px;font-weight:700;color:#333;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.card-title .hint{font-size:10px;color:#aaa;font-weight:400}
+.chart-wrap{position:relative;height:220px}
+.chart-wrap-sm{position:relative;height:160px}
+.chart-wrap-lg{position:relative;height:300px}
+
+/* ── ALERTA CARDS ── */
+.alert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:20px}
+.alert-card{background:var(--white);border-radius:10px;padding:14px;box-shadow:var(--shadow);border-left:4px solid var(--red);display:flex;gap:12px;align-items:flex-start}
+.alert-card.warn{border-left-color:var(--orange)}
+.alert-card.info{border-left-color:var(--blue)}
+.alert-card.ok{border-left-color:var(--green)}
+.alert-icon{font-size:20px;flex-shrink:0;margin-top:2px}
+.alert-body .seller-name{font-weight:700;font-size:12px;color:#333;margin-bottom:3px}
+.alert-body .alert-msg{font-size:11px;color:#666;line-height:1.5}
+.alert-body .alert-val{font-size:11px;font-weight:700;margin-top:4px}
+.alert-val.red{color:var(--red)}
+.alert-val.orange{color:var(--orange)}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--yellow);padding:8px 10px;text-align:left;font-weight:700;font-size:11px;color:#333;white-space:nowrap;position:sticky;top:0}
+tbody tr:nth-child(even){background:#FAFAFA}
+tbody tr:hover{background:#FFFBEA}
+tbody td{padding:7px 10px;border-bottom:1px solid #F0F0F0;color:#444;white-space:nowrap}
+.td-name{font-weight:600;color:#333}
+.td-num{text-align:right;font-variant-numeric:tabular-nums}
+.td-center{text-align:center}
+
+/* ── HEATMAP CELLS ── */
+.hm-high{background:#CCEDDA;color:#006633;font-weight:700}
+.hm-mid{background:#FFF3C0;color:#7a5500;font-weight:600}
+.hm-low{background:#FDECEA;color:#a00000;font-weight:600}
+
+/* ── REP BADGE ── */
+.rep{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;display:inline-block}
+.rep.verde{background:#E6F9EE;color:var(--green)}
+.rep.amarelo{background:#FFF3C0;color:#7a5500}
+.rep.laranja{background:#FFE8D6;color:#c04a00}
+.rep.vermelho{background:#FDECEA;color:var(--red)}
+.rep.cinza{background:#F0F0F0;color:#666}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:40px;color:#bbb;font-size:13px}
+.empty .emoji{font-size:32px;display:block;margin-bottom:8px}
+
+/* ── FOOTER ── */
+#footer{position:fixed;bottom:0;left:var(--sidebar-w);right:0;height:32px;background:#fff;border-top:1px solid var(--gray);display:flex;align-items:center;padding:0 20px;font-size:10px;color:#aaa;gap:16px;z-index:80}
+#footer a{color:#aaa;text-decoration:none}
+#footer a:hover{color:var(--blue)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  #sidebar{transform:translateX(-100%)}
+  #main,#filter-bar,#footer{left:0;margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header id="hdr">
+  <div class="logo">Mercado<span>Livre</span></div>
+  <div class="sep"></div>
+  <div class="title">Gestão MeliPro | Renan Teixeira</div>
+  <div class="badges">
+    <span class="badge blue" id="hdr-sellers">37 sellers</span>
+    <span class="badge green" id="hdr-atualizado">Carregando...</span>
+  </div>
+</header>
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside id="sidebar">
+  <div class="sb-section">Visão Geral</div>
+  <div class="sb-item active" onclick="showView('carteira')" id="sb-carteira">
+    <span style="font-size:15px">📊</span>
+    <span class="sb-name">Carteira Total</span>
+  </div>
+  <div class="sb-section">Meus Sellers</div>
+  <div id="sb-sellers-list"></div>
+</aside>
+
+<!-- ═══════════════ FILTER BAR ═══════════════ -->
+<div id="filter-bar">
+  <span style="font-size:11px;font-weight:600;color:#888;margin-right:4px">Período:</span>
+  <span class="pill active" onclick="setPeriod('MTD',this)">MTD</span>
+  <span class="pill" onclick="setPeriod('YTD',this)">YTD</span>
+  <span class="pill" onclick="setPeriod('Q1',this)">Q1</span>
+  <span class="pill" onclick="setPeriod('Q2',this)">Q2</span>
+  <span class="pill" onclick="setPeriod('L30',this)">Últ. 30d</span>
+  <span class="pill" onclick="setPeriod('L7',this)">Últ. 7d</span>
+  <span style="margin-left:auto;font-size:10px;color:#bbb" id="periodo-label">—</span>
+</div>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div id="main">
+
+  <!-- ─── CARTEIRA TOTAL ─── -->
+  <div class="view active" id="view-carteira">
+    <div class="page-header">
+      <h2>Carteira Total</h2>
+      <span class="sub" id="ct-periodo-sub">—</span>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="showTab('ct','geral',this)">Geral</div>
+      <div class="tab" onclick="showTab('ct','alertas',this)">🚨 Alertas do Dia</div>
+      <div class="tab" onclick="showTab('ct','full',this)">Full & Logística</div>
+      <div class="tab" onclick="showTab('ct','ads',this)">ADS</div>
+      <div class="tab" onclick="showTab('ct','ranking',this)">Ranking Sellers</div>
+    </div>
+    <!-- Geral -->
+    <div class="tab-content active" id="ct-geral">
+      <div class="kpi-row kpi-4" id="ct-kpi-row"></div>
+      <div class="grid-7-3">
+        <div class="card">
+          <div class="card-title">GMV Diário — Carteira Total <span class="hint">últimos 30 dias</span></div>
+          <div class="chart-wrap"><canvas id="chart-ct-gmv-diario"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">GMV por Logística <span class="hint">MTD</span></div>
+          <div class="chart-wrap"><canvas id="chart-ct-mix-log"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">GMV por Seller — MTD <span class="hint">ordenado por GMV</span></div>
+        <div class="chart-wrap-lg"><canvas id="chart-ct-gmv-sellers"></canvas></div>
+      </div>
+    </div>
+    <!-- Alertas -->
+    <div class="tab-content" id="ct-alertas">
+      <div class="kpi-row kpi-4" id="ct-alert-kpis"></div>
+      <div id="ct-alert-grid" class="alert-grid"></div>
+    </div>
+    <!-- Full -->
+    <div class="tab-content" id="ct-full">
+      <div class="kpi-row kpi-5" id="ct-full-kpis"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Share Full por Seller <span class="hint">MTD</span></div>
+          <div class="chart-wrap"><canvas id="chart-ct-share-full"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Situação de Estoque <span class="hint">hoje</span></div>
+          <div class="table-wrap" id="ct-full-estoque-table"></div>
+        </div>
+      </div>
+    </div>
+    <!-- ADS -->
+    <div class="tab-content" id="ct-ads">
+      <div class="kpi-row kpi-4" id="ct-ads-kpis"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Investimento ADS por Seller <span class="hint">MTD</span></div>
+          <div class="chart-wrap-lg"><canvas id="chart-ct-ads-sellers"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">ACOS por Seller <span class="hint">MTD</span></div>
+          <div class="chart-wrap-lg"><canvas id="chart-ct-acos"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <!-- Ranking -->
+    <div class="tab-content" id="ct-ranking">
+      <div class="card">
+        <div class="card-title">Ranking de Sellers — MTD</div>
+        <div class="table-wrap" id="ct-ranking-table"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SELLER VIEW (renderizado dinamicamente) ─── -->
+  <div class="view" id="view-seller">
+    <div class="page-header">
+      <h2 id="sel-nome">—</h2>
+      <span class="sub" id="sel-id-badge">ID: —</span>
+      <span id="sel-rep-badge" class="rep cinza" style="margin-left:8px">—</span>
+    </div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="showTab('sel','geral',this)">Geral</div>
+      <div class="tab" onclick="showTab('sel','vendas',this)">Vendas Diárias</div>
+      <div class="tab" onclick="showTab('sel','full',this)">Full & Logística</div>
+      <div class="tab" onclick="showTab('sel','ads',this)">ADS</div>
+    </div>
+    <!-- Geral do seller -->
+    <div class="tab-content active" id="sel-geral">
+      <div class="kpi-row kpi-4" id="sel-kpi-row"></div>
+      <div class="grid-7-3">
+        <div class="card">
+          <div class="card-title">GMV Diário <span class="hint">últimos 30 dias</span></div>
+          <div class="chart-wrap"><canvas id="chart-sel-gmv-diario"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Mix Logístico <span class="hint">MTD</span></div>
+          <div class="chart-wrap"><canvas id="chart-sel-mix"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <!-- Vendas diárias do seller -->
+    <div class="tab-content" id="sel-vendas">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">GMV Diário vs Semana Anterior</div>
+        <div class="chart-wrap-lg"><canvas id="chart-sel-gmv-vs"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Histórico Diário</div>
+        <div class="table-wrap" id="sel-vendas-table"></div>
+      </div>
+    </div>
+    <!-- Full do seller -->
+    <div class="tab-content" id="sel-full">
+      <div class="kpi-row kpi-5" id="sel-full-kpis"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">GMV por Modal — Diário</div>
+          <div class="chart-wrap"><canvas id="chart-sel-full-diario"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Estoque & Saúde Full</div>
+          <div class="table-wrap" id="sel-full-table"></div>
+        </div>
+      </div>
+    </div>
+    <!-- ADS do seller -->
+    <div class="tab-content" id="sel-ads">
+      <div class="kpi-row kpi-4" id="sel-ads-kpis"></div>
+      <div class="card">
+        <div class="card-title">Investimento ADS Diário</div>
+        <div class="chart-wrap"><canvas id="chart-sel-ads-diario"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer id="footer">
+  <span>Fonte: meli-bi-data.WHOWNER</span>
+  <span>|</span>
+  <span id="footer-updated">Atualizado: —</span>
+  <span>|</span>
+  <span id="footer-periodo">Período: —</span>
+</footer>
+
+<!-- ═══════════════ DATA ═══════════════ -->
+<script id="dash-data" type="application/json">__DASH_DATA__</script>
+
+<!-- ═══════════════ JAVASCRIPT ═══════════════ -->
+<script>
+Chart.register(ChartDataLabels);
+
+// ── Carrega dados ──
+let D = {};
+try {
+  const raw = document.getElementById('dash-data').textContent.trim();
+  if (raw && raw !== '__DASH_DATA__') D = JSON.parse(raw);
+} catch(e) { console.error('Erro ao carregar dados:', e); }
+
+const SELLERS_CFG = D.sellers_config || [];
+const SELLERS_MAP = {};
+SELLERS_CFG.forEach(s => { SELLERS_MAP[s.id] = s; });
+
+let currentPeriod = 'MTD';
+let currentSellerId = null;
+let charts = {};
+
+// ── Utilitários ──
+function fmt(v) {
+  if (!v && v !== 0) return '—';
+  if (v >= 1e6) return 'R$ ' + (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return 'R$ ' + (v/1e3).toFixed(0) + 'k';
+  return 'R$ ' + v.toFixed(0);
+}
+function fmtN(v) {
+  if (!v && v !== 0) return '—';
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(0) + 'k';
+  return v.toFixed(0);
+}
+function fmtPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; }
+function varBadge(v) {
+  if (v == null) return '';
+  const cls = v > 3 ? 'up' : v < -3 ? 'down' : 'flat';
+  return `<span class="kpi-var ${cls}">${v > 0 ? '▲' : v < 0 ? '▼' : '—'} ${Math.abs(v).toFixed(1)}%</span>`;
+}
+function repBadge(r) {
+  const m = {verde:'verde',amarelo:'amarelo',laranja:'laranja',vermelho:'vermelho'};
+  const c = m[r] || 'cinza';
+  return `<span class="rep ${c}">${r || '—'}</span>`;
+}
+function heatCell(v, low, mid) {
+  if (v == null) return 'td-num';
+  if (v >= mid) return 'td-num hm-high';
+  if (v >= low) return 'td-num hm-mid';
+  return 'td-num hm-low';
+}
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+function dateLabel(d) { return d ? d.slice(5).replace('-','/') : ''; }
+
+// ── Navegação ──
+function showView(id, sellerId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(v => v.classList.remove('active'));
+
+  if (id === 'carteira') {
+    document.getElementById('view-carteira').classList.add('active');
+    document.getElementById('sb-carteira').classList.add('active');
+    currentSellerId = null;
+  } else if (id === 'seller' && sellerId) {
+    currentSellerId = sellerId;
+    document.getElementById('view-seller').classList.add('active');
+    const sbEl = document.getElementById('sb-' + sellerId);
+    if (sbEl) sbEl.classList.add('active');
+    renderSeller(sellerId);
+  }
+}
+
+function showTab(prefix, section, el) {
+  const bar = el.closest('.tab-bar');
+  bar.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const content = el.closest('.view') || document.getElementById('view-' + prefix) || document.getElementById('view-carteira');
+  content.querySelectorAll('.tab-content').forEach(tc => {
+    tc.classList.toggle('active', tc.id === prefix + '-' + section);
+  });
+  // re-render charts on tab switch if needed
+  if (prefix === 'ct') renderCarteiraTab(section);
+  if (prefix === 'sel' && currentSellerId) renderSellerTab(currentSellerId, section);
+}
+
+function setPeriod(p, el) {
+  currentPeriod = p;
+  document.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  renderAll();
+}
+
+// ── Dados filtrados por período ──
+function getSellerPeriodData(sid) {
+  const sd = (D.sellers || {})[sid];
+  if (!sd) return null;
+  const diario = sd.gmv_diario || [];
+  const filtered = filterByPeriod(diario);
+  return { ...sd, gmv_diario_filtered: filtered };
+}
+
+function filterByPeriod(arr) {
+  if (!arr || !arr.length) return arr || [];
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  let from;
+  if (currentPeriod === 'MTD') from = new Date(y, m, 1);
+  else if (currentPeriod === 'YTD') from = new Date(y, 0, 1);
+  else if (currentPeriod === 'Q1') from = new Date(y, 0, 1), today.setMonth(2, 31);
+  else if (currentPeriod === 'Q2') from = new Date(y, 3, 1);
+  else if (currentPeriod === 'L30') from = new Date(Date.now() - 30*86400000);
+  else if (currentPeriod === 'L7') from = new Date(Date.now() - 7*86400000);
+  else from = new Date(y, m, 1);
+  return arr.filter(r => new Date(r.data) >= from);
+}
+
+// ── RENDER SIDEBAR ──
+function renderSidebar() {
+  const list = document.getElementById('sb-sellers-list');
+  if (!list) return;
+  const sellers = D.sellers || {};
+  list.innerHTML = SELLERS_CFG.map(s => {
+    const sd = sellers[s.id] || {};
+    const var7 = sd.var_d7 != null ? sd.var_d7 : null;
+    const varHtml = var7 != null
+      ? `<span class="sb-var ${var7 >= 0 ? 'up' : 'down'}">${var7 >= 0 ? '+' : ''}${var7.toFixed(0)}%</span>`
+      : '';
+    const repColor = {verde:'green',amarelo:'yellow',laranja:'yellow',vermelho:'red'}[sd.reputacao] || 'gray';
+    return `<div class="sb-item" id="sb-${s.id}" onclick="showView('seller',${s.id})">
+      <span class="dot ${repColor}"></span>
+      <span class="sb-name" title="${s.nome}">${s.nome}</span>
+      ${varHtml}
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER CARTEIRA GERAL ──
+function renderCarteiraGeral() {
+  const ct = D.carteira || {};
+  const gmv = ct.gmv_periodo || 0;
+  const gmv_ly = ct.gmv_periodo_ly || 0;
+  const var_yoy = gmv_ly ? ((gmv / gmv_ly) - 1) * 100 : null;
+  const tsi = ct.tsi_periodo || 0;
+  const ticket = ct.ticket_medio || 0;
+  const alertas = ct.alertas || [];
+  const alertasAltos = alertas.filter(a => a.prioridade === 'alta').length;
+
+  document.getElementById('ct-kpi-row').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">GMV Período</div>
+      <div class="kpi-value">${fmt(gmv)}</div>
+      ${varBadge(var_yoy)}
+      <div class="kpi-sub">vs mesmo período LY</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Unidades Vendidas</div>
+      <div class="kpi-value">${fmtN(tsi)}</div>
+      <div class="kpi-sub">período selecionado</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Ticket Médio</div>
+      <div class="kpi-value">${fmt(ticket)}</div>
+      <div class="kpi-sub">por pedido</div>
+    </div>
+    <div class="kpi-card ${alertasAltos > 0 ? 'red' : 'green'}">
+      <div class="kpi-label">Alertas Ativos</div>
+      <div class="kpi-value">${alertas.length}</div>
+      <div class="kpi-sub">${alertasAltos} de alta prioridade</div>
+    </div>
+  `;
+
+  // Chart GMV diário carteira
+  const diario = filterByPeriod(ct.gmv_diario || []);
+  destroyChart('ct-gmv-diario');
+  const ctx1 = document.getElementById('chart-ct-gmv-diario');
+  if (ctx1 && diario.length) {
+    charts['ct-gmv-diario'] = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: diario.map(d => dateLabel(d.data)),
+        datasets: [{
+          label: 'GMV',
+          data: diario.map(d => d.gmv),
+          backgroundColor: '#3483FA',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {display: false},
+          datalabels: {display: false}
+        },
+        scales: {
+          x: {ticks: {font: {size: 10}}, grid: {display: false}},
+          y: {ticks: {font: {size: 10}, callback: v => fmt(v)}, grid: {color: '#F0F0F0'}}
+        }
+      }
+    });
+  }
+
+  // Chart mix logístico
+  const mix = ct.mix_log || {};
+  destroyChart('ct-mix-log');
+  const ctx2 = document.getElementById('chart-ct-mix-log');
+  if (ctx2) {
+    const labels = ['Full','XD','Flex','DS'];
+    const vals = [mix.full||0, mix.xd||0, mix.flex||0, mix.ds||0];
+    const total = vals.reduce((a,b)=>a+b,0);
+    charts['ct-mix-log'] = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: vals,
+          backgroundColor: ['#3483FA','#00A650','#FF7733','#9B59B6'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {position: 'bottom', labels: {font: {size: 11}}},
+          datalabels: {
+            color: '#fff', font: {size: 10, weight: 'bold'},
+            formatter: (v) => total ? (v/total*100).toFixed(0)+'%' : ''
+          }
+        }
+      }
+    });
+  }
+
+  // Chart GMV por seller
+  const rankings = (ct.rankings || []).slice(0, 20);
+  destroyChart('ct-gmv-sellers');
+  const ctx3 = document.getElementById('chart-ct-gmv-sellers');
+  if (ctx3 && rankings.length) {
+    charts['ct-gmv-sellers'] = new Chart(ctx3, {
+      type: 'bar',
+      data: {
+        labels: rankings.map(r => r.nome_short || r.nome),
+        datasets: [{
+          label: 'GMV',
+          data: rankings.map(r => r.gmv_periodo),
+          backgroundColor: rankings.map((r,i) => i < 3 ? '#FFE600' : '#3483FA'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: {display: false},
+          datalabels: {
+            anchor: 'end', align: 'end',
+            formatter: v => fmt(v),
+            font: {size: 10, weight: 'bold'}, color: '#444'
+          }
+        },
+        scales: {
+          x: {ticks: {callback: v => fmt(v), font: {size: 10}}, grid: {color: '#F0F0F0'}},
+          y: {ticks: {font: {size: 10}}, grid: {display: false}}
+        }
+      }
+    });
+  }
+}
+
+// ── RENDER CARTEIRA ALERTAS ──
+function renderCarteiraAlertas() {
+  const alertas = (D.carteira || {}).alertas || [];
+  const altas = alertas.filter(a => a.prioridade === 'alta').length;
+  const medias = alertas.filter(a => a.prioridade === 'media').length;
+
+  document.getElementById('ct-alert-kpis').innerHTML = `
+    <div class="kpi-card red">
+      <div class="kpi-label">Alertas Alta Prioridade</div>
+      <div class="kpi-value">${altas}</div>
+      <div class="kpi-sub">ação imediata</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Alertas Média Prioridade</div>
+      <div class="kpi-value">${medias}</div>
+      <div class="kpi-sub">monitorar hoje</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total Alertas</div>
+      <div class="kpi-value">${alertas.length}</div>
+      <div class="kpi-sub">sellers com atenção</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Sellers OK</div>
+      <div class="kpi-value">${SELLERS_CFG.length - new Set(alertas.map(a=>a.id)).size}</div>
+      <div class="kpi-sub">sem alertas hoje</div>
+    </div>
+  `;
+
+  const grid = document.getElementById('ct-alert-grid');
+  if (!alertas.length) {
+    grid.innerHTML = '<div class="empty"><span class="emoji">✅</span>Nenhum alerta hoje! Todos os sellers estão OK.</div>';
+    return;
+  }
+
+  const iconMap = {
+    queda_gmv: '📉', stockout: '📦', ads_parado: '📢', reputacao: '⭐', doh_baixo: '⚠️', default: '🔔'
+  };
+  const classMap = {alta: '', media: 'warn', baixa: 'info'};
+
+  grid.innerHTML = alertas.sort((a,b) => {
+    const o = {alta:0,media:1,baixa:2};
+    return (o[a.prioridade]||1) - (o[b.prioridade]||1);
+  }).map(a => `
+    <div class="alert-card ${classMap[a.prioridade] || ''}">
+      <div class="alert-icon">${iconMap[a.tipo] || iconMap.default}</div>
+      <div class="alert-body">
+        <div class="seller-name">${a.nome}</div>
+        <div class="alert-msg">${a.descricao}</div>
+        <div class="alert-val ${a.prioridade === 'alta' ? 'red' : 'orange'}">${a.valor_fmt || ''}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── RENDER CARTEIRA FULL ──
+function renderCarteiraFull() {
+  const ct = D.carteira || {};
+  const full = ct.full || {};
+  document.getElementById('ct-full-kpis').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">GMV Full Total</div>
+      <div class="kpi-value">${fmt(full.gmv_full_total || 0)}</div>
+      <div class="kpi-sub">período selecionado</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Share Full</div>
+      <div class="kpi-value">${(full.share_full_pct || 0).toFixed(1)}%</div>
+      <div class="kpi-sub">% do GMV total</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">GMV Perdido (Stockout)</div>
+      <div class="kpi-value">${fmt(full.gmv_perdido_total || 0)}</div>
+      <div class="kpi-sub">oportunidade perdida</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">SKUs em Stockout</div>
+      <div class="kpi-value">${fmtN(full.stockout_skus_total || 0)}</div>
+      <div class="kpi-sub">hoje</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">SKUs DOH &lt; 2 sem.</div>
+      <div class="kpi-value">${fmtN(full.doh_baixo_total || 0)}</div>
+      <div class="kpi-sub">risco de ruptura</div>
+    </div>
+  `;
+
+  // Chart share full por seller
+  const fullRank = (ct.full_rankings || []).filter(r => r.share_full_pct > 0).slice(0,15);
+  destroyChart('ct-share-full');
+  const ctx = document.getElementById('chart-ct-share-full');
+  if (ctx && fullRank.length) {
+    charts['ct-share-full'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: fullRank.map(r => r.nome_short || r.nome),
+        datasets: [{
+          label: 'Share Full %',
+          data: fullRank.map(r => r.share_full_pct),
+          backgroundColor: fullRank.map(r => r.share_full_pct >= 60 ? '#00A650' : r.share_full_pct >= 30 ? '#FF7733' : '#F23D4F'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: {
+          legend: {display: false},
+          datalabels: {anchor:'end',align:'end',formatter:v=>v.toFixed(0)+'%',font:{size:10,weight:'bold'},color:'#444'}
+        },
+        scales: {
+          x: {max:100,ticks:{callback:v=>v+'%',font:{size:10}}},
+          y: {ticks:{font:{size:10}}}
+        }
+      }
+    });
+  }
+
+  // Table estoque
+  const tbl = document.getElementById('ct-full-estoque-table');
+  const rows = ct.full_rankings || [];
+  if (!rows.length) { tbl.innerHTML = '<div class="empty"><span class="emoji">📦</span>Sem dados de Full.</div>'; return; }
+  tbl.innerHTML = `<table>
+    <thead><tr>
+      <th>Seller</th><th class="td-num">Share Full</th><th class="td-num">Estoque</th>
+      <th class="td-num">Stockout SKUs</th><th class="td-num">GMV Perdido</th><th class="td-num">DOH &lt; 2 sem</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(r => `<tr>
+        <td class="td-name">${r.nome}</td>
+        <td class="${heatCell(r.share_full_pct,30,60)}">${(r.share_full_pct||0).toFixed(0)}%</td>
+        <td class="td-num">${fmtN(r.estoque_total||0)}</td>
+        <td class="${heatCell(-(r.stockout_skus||0),-5,-1)}">${fmtN(r.stockout_skus||0)}</td>
+        <td class="td-num">${fmt(r.gmv_perdido||0)}</td>
+        <td class="${heatCell(-(r.doh_baixo||0),-5,-1)}">${fmtN(r.doh_baixo||0)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── RENDER CARTEIRA ADS ──
+function renderCarteiraAds() {
+  const ct = D.carteira || {};
+  const ads = ct.ads || {};
+  document.getElementById('ct-ads-kpis').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">Invest. ADS Total</div>
+      <div class="kpi-value">${fmt(ads.invest_total || 0)}</div>
+      <div class="kpi-sub">período</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">GMV via ADS</div>
+      <div class="kpi-value">${fmt(ads.gmv_ads_total || 0)}</div>
+      <div class="kpi-sub">período</div>
+    </div>
+    <div class="kpi-card ${(ads.acos_medio||0) > 15 ? 'red' : 'yellow'}">
+      <div class="kpi-label">ACOS Médio</div>
+      <div class="kpi-value">${(ads.acos_medio||0).toFixed(1)}%</div>
+      <div class="kpi-sub">meta: &lt; 15%</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Sellers sem ADS</div>
+      <div class="kpi-value">${ads.sellers_sem_ads || 0}</div>
+      <div class="kpi-sub">sem investimento</div>
+    </div>
+  `;
+
+  const adsRank = ct.ads_rankings || [];
+  destroyChart('ct-ads-sellers');
+  const ctx1 = document.getElementById('chart-ct-ads-sellers');
+  if (ctx1 && adsRank.length) {
+    charts['ct-ads-sellers'] = new Chart(ctx1, {
+      type: 'bar', indexAxis: 'y',
+      data: {
+        labels: adsRank.map(r => r.nome_short || r.nome),
+        datasets: [{
+          label: 'Investimento',
+          data: adsRank.map(r => r.invest_periodo),
+          backgroundColor: '#3483FA', borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {display:false},
+          datalabels: {anchor:'end',align:'end',formatter:v=>fmt(v),font:{size:10,weight:'bold'},color:'#444'}
+        },
+        scales: {
+          x: {ticks:{callback:v=>fmt(v),font:{size:10}}},
+          y: {ticks:{font:{size:10}}}
+        }
+      }
+    });
+  }
+
+  destroyChart('ct-acos');
+  const ctx2 = document.getElementById('chart-ct-acos');
+  if (ctx2 && adsRank.length) {
+    charts['ct-acos'] = new Chart(ctx2, {
+      type: 'bar', indexAxis: 'y',
+      data: {
+        labels: adsRank.map(r => r.nome_short || r.nome),
+        datasets: [{
+          label: 'ACOS %',
+          data: adsRank.map(r => r.acos),
+          backgroundColor: adsRank.map(r => (r.acos||0) > 20 ? '#F23D4F' : (r.acos||0) > 12 ? '#FF7733' : '#00A650'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {display:false},
+          datalabels: {anchor:'end',align:'end',formatter:v=>(v||0).toFixed(1)+'%',font:{size:10,weight:'bold'},color:'#444'}
+        },
+        scales: {
+          x: {ticks:{callback:v=>v+'%',font:{size:10}}},
+          y: {ticks:{font:{size:10}}}
+        }
+      }
+    });
+  }
+}
+
+// ── RENDER CARTEIRA RANKING ──
+function renderCarteiraRanking() {
+  const rankings = (D.carteira || {}).rankings || [];
+  const tbl = document.getElementById('ct-ranking-table');
+  if (!rankings.length) { tbl.innerHTML = '<div class="empty"><span class="emoji">📊</span>Sem dados.</div>'; return; }
+  tbl.innerHTML = `<table>
+    <thead><tr>
+      <th>#</th><th>Seller</th><th>ID</th>
+      <th class="td-num">GMV Período</th><th class="td-num">Var YoY</th>
+      <th class="td-num">TSI</th><th class="td-num">Ticket Médio</th>
+      <th class="td-num">GMV Ontem</th><th class="td-num">Var D-7</th>
+      <th>Reputação</th>
+    </tr></thead>
+    <tbody>
+      ${rankings.map((r, i) => `<tr>
+        <td class="td-center"><b>${i+1}</b></td>
+        <td class="td-name" style="cursor:pointer;color:var(--blue)" onclick="showView('seller',${r.id})">${r.nome}</td>
+        <td class="td-center" style="color:#aaa;font-size:10px">${r.id}</td>
+        <td class="td-num"><b>${fmt(r.gmv_periodo)}</b></td>
+        <td class="${heatCell(r.var_yoy,-10,10)}">${r.var_yoy != null ? fmtPct(r.var_yoy) : '—'}</td>
+        <td class="td-num">${fmtN(r.tsi_periodo)}</td>
+        <td class="td-num">${fmt(r.ticket_medio)}</td>
+        <td class="td-num">${fmt(r.gmv_ontem)}</td>
+        <td class="${heatCell(r.var_d7,-20,5)}">${r.var_d7 != null ? fmtPct(r.var_d7) : '—'}</td>
+        <td>${repBadge(r.reputacao)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── RENDER SELLER ──
+function renderSeller(sid) {
+  const s = SELLERS_MAP[sid] || {};
+  const sd = (D.sellers || {})[sid] || {};
+  document.getElementById('sel-nome').textContent = s.nome || 'Seller';
+  document.getElementById('sel-id-badge').textContent = 'ID: ' + sid;
+  document.getElementById('sel-rep-badge').className = 'rep ' + (sd.reputacao || 'cinza');
+  document.getElementById('sel-rep-badge').textContent = sd.reputacao || '—';
+  renderSellerGeral(sid);
+}
+
+function renderSellerGeral(sid) {
+  const sd = (D.sellers || {})[sid] || {};
+  const diario = filterByPeriod(sd.gmv_diario || []);
+  const gmv = diario.reduce((a, r) => a + (r.gmv || 0), 0);
+  const tsi = diario.reduce((a, r) => a + (r.tsi || 0), 0);
+  const ticket = tsi > 0 ? gmv / tsi : 0;
+  const gmvOntem = sd.gmv_ontem || 0;
+  const var_d7 = sd.var_d7;
+
+  document.getElementById('sel-kpi-row').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">GMV Período</div>
+      <div class="kpi-value">${fmt(gmv)}</div>
+      ${varBadge(sd.var_yoy)}
+      <div class="kpi-sub">vs mesmo período LY</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Unidades</div>
+      <div class="kpi-value">${fmtN(tsi)}</div>
+      <div class="kpi-sub">período</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Ticket Médio</div>
+      <div class="kpi-value">${fmt(ticket)}</div>
+      <div class="kpi-sub">por unidade</div>
+    </div>
+    <div class="kpi-card ${var_d7 != null && var_d7 < -15 ? 'red' : 'orange'}">
+      <div class="kpi-label">GMV Ontem</div>
+      <div class="kpi-value">${fmt(gmvOntem)}</div>
+      ${varBadge(var_d7)}
+      <div class="kpi-sub">vs D-7</div>
+    </div>
+  `;
+
+  // Chart GMV diário
+  destroyChart('sel-gmv-diario');
+  const ctx1 = document.getElementById('chart-sel-gmv-diario');
+  if (ctx1) {
+    charts['sel-gmv-diario'] = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: diario.map(d => dateLabel(d.data)),
+        datasets: [{
+          label: 'GMV',
+          data: diario.map(d => d.gmv),
+          backgroundColor: '#3483FA', borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {legend:{display:false}, datalabels:{display:false}},
+        scales: {
+          x: {ticks:{font:{size:10}}, grid:{display:false}},
+          y: {ticks:{callback:v=>fmt(v),font:{size:10}}, grid:{color:'#F0F0F0'}}
+        }
+      }
+    });
+  }
+
+  // Chart mix logístico seller
+  const full = sd.full || {};
+  destroyChart('sel-mix');
+  const ctx2 = document.getElementById('chart-sel-mix');
+  if (ctx2) {
+    const vals = [full.gmv_full||0, full.gmv_xd||0, full.gmv_flex||0, full.gmv_ds||0];
+    const total = vals.reduce((a,b)=>a+b,0);
+    charts['sel-mix'] = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Full','XD','Flex','DS'],
+        datasets: [{data: vals, backgroundColor:['#3483FA','#00A650','#FF7733','#9B59B6'], borderWidth:2}]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend:{position:'bottom',labels:{font:{size:11}}},
+          datalabels:{color:'#fff',font:{size:11,weight:'bold'},formatter:(v)=>total?( v/total*100).toFixed(0)+'%':''}
+        }
+      }
+    });
+  }
+}
+
+function renderSellerVendas(sid) {
+  const sd = (D.sellers || {})[sid] || {};
+  const diario = sd.gmv_diario || [];
+  const all30 = diario.slice(-30);
+  const semAtual = all30.slice(-7);
+  const semAnterior = all30.slice(-14,-7);
+
+  destroyChart('sel-gmv-vs');
+  const ctx = document.getElementById('chart-sel-gmv-vs');
+  if (ctx && semAtual.length) {
+    charts['sel-gmv-vs'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: semAtual.map(d => dateLabel(d.data)),
+        datasets: [
+          {label:'Esta semana',data:semAtual.map(d=>d.gmv),backgroundColor:'#3483FA',borderRadius:4},
+          {label:'Semana anterior',data:semAnterior.map(d=>d.gmv||0),backgroundColor:'#E0E0E0',borderRadius:4}
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {legend:{position:'top'}, datalabels:{display:false}},
+        scales: {
+          x:{ticks:{font:{size:11}},grid:{display:false}},
+          y:{ticks:{callback:v=>fmt(v),font:{size:11}},grid:{color:'#F0F0F0'}}
+        }
+      }
+    });
+  }
+
+  // Table diária
+  const tbl = document.getElementById('sel-vendas-table');
+  if (!all30.length) { tbl.innerHTML = '<div class="empty"><span class="emoji">📈</span>Sem dados.</div>'; return; }
+  tbl.innerHTML = `<table>
+    <thead><tr>
+      <th>Data</th><th class="td-num">GMV</th><th class="td-num">Unidades</th>
+      <th class="td-num">Ticket Médio</th><th class="td-num">Var D-7</th>
+    </tr></thead>
+    <tbody>
+      ${[...all30].reverse().map((r, i) => {
+        const prev = all30[all30.length - 1 - i - 7];
+        const varD7 = prev && prev.gmv ? ((r.gmv / prev.gmv) - 1) * 100 : null;
+        const ticket = r.tsi > 0 ? r.gmv / r.tsi : 0;
+        return `<tr>
+          <td>${r.data}</td>
+          <td class="td-num"><b>${fmt(r.gmv)}</b></td>
+          <td class="td-num">${fmtN(r.tsi||0)}</td>
+          <td class="td-num">${fmt(ticket)}</td>
+          <td class="${varD7 != null ? heatCell(varD7,-20,5) : 'td-num'}">${varD7 != null ? fmtPct(varD7) : '—'}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+
+function renderSellerFull(sid) {
+  const sd = (D.sellers || {})[sid] || {};
+  const full = sd.full || {};
+  const diario = filterByPeriod(full.gmv_diario || []);
+
+  document.getElementById('sel-full-kpis').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">GMV Full</div>
+      <div class="kpi-value">${fmt(full.gmv_full||0)}</div>
+      <div class="kpi-sub">período</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Share Full</div>
+      <div class="kpi-value">${(full.share_full_pct||0).toFixed(1)}%</div>
+      <div class="kpi-sub">do GMV total</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">GMV Perdido</div>
+      <div class="kpi-value">${fmt(full.gmv_perdido||0)}</div>
+      <div class="kpi-sub">stockout</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">SKUs Stockout</div>
+      <div class="kpi-value">${fmtN(full.stockout_skus||0)}</div>
+      <div class="kpi-sub">hoje</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Estoque Total</div>
+      <div class="kpi-value">${fmtN(full.estoque_total||0)}</div>
+      <div class="kpi-sub">unidades</div>
+    </div>
+  `;
+
+  destroyChart('sel-full-diario');
+  const ctx = document.getElementById('chart-sel-full-diario');
+  if (ctx && diario.length) {
+    charts['sel-full-diario'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: diario.map(d => dateLabel(d.data)),
+        datasets: [
+          {label:'Full',data:diario.map(d=>d.gmv_full||0),backgroundColor:'#3483FA',borderRadius:2,stack:'s'},
+          {label:'XD',data:diario.map(d=>d.gmv_xd||0),backgroundColor:'#00A650',borderRadius:2,stack:'s'},
+          {label:'Flex',data:diario.map(d=>d.gmv_flex||0),backgroundColor:'#FF7733',borderRadius:2,stack:'s'},
+          {label:'DS',data:diario.map(d=>d.gmv_ds||0),backgroundColor:'#9B59B6',borderRadius:2,stack:'s'}
+        ]
+      },
+      options: {
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top'},datalabels:{display:false}},
+        scales:{x:{stacked:true,ticks:{font:{size:10}},grid:{display:false}},y:{stacked:true,ticks:{callback:v=>fmt(v),font:{size:10}},grid:{color:'#F0F0F0'}}}
+      }
+    });
+  }
+
+  const tbl = document.getElementById('sel-full-table');
+  const rows = full.itens || [];
+  if (!rows.length) { tbl.innerHTML = '<div class="empty"><span class="emoji">📦</span>Sem dados de estoque detalhado.</div>'; return; }
+  tbl.innerHTML = `<table>
+    <thead><tr><th>Item</th><th class="td-num">Estoque</th><th class="td-num">Stockout</th><th class="td-num">DOH &lt; 2sem</th><th class="td-num">GMV Perdido</th></tr></thead>
+    <tbody>${rows.slice(0,20).map(r=>`<tr>
+      <td>${r.title || r.id}</td>
+      <td class="td-num">${fmtN(r.estoque||0)}</td>
+      <td class="${r.stockout?'hm-low td-num':'td-num'}">${r.stockout?'Sim':'—'}</td>
+      <td class="${r.doh_baixo?'hm-mid td-num':'td-num'}">${r.doh_baixo?'Sim':'—'}</td>
+      <td class="td-num">${fmt(r.gmv_perdido||0)}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function renderSellerAds(sid) {
+  const sd = (D.sellers || {})[sid] || {};
+  const ads = sd.ads || {};
+  const diario = filterByPeriod(ads.diario || []);
+
+  document.getElementById('sel-ads-kpis').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">Investimento ADS</div>
+      <div class="kpi-value">${fmt(ads.invest_periodo||0)}</div>
+      <div class="kpi-sub">período</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">PADS</div>
+      <div class="kpi-value">${fmt(ads.invest_pads||0)}</div>
+      <div class="kpi-sub">product ads</div>
+    </div>
+    <div class="kpi-card ${(ads.acos||0)>15?'red':'yellow'}">
+      <div class="kpi-label">ACOS</div>
+      <div class="kpi-value">${(ads.acos||0).toFixed(1)}%</div>
+      <div class="kpi-sub">meta: &lt; 15%</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">BADS</div>
+      <div class="kpi-value">${fmt(ads.invest_bads||0)}</div>
+      <div class="kpi-sub">brand ads</div>
+    </div>
+  `;
+
+  destroyChart('sel-ads-diario');
+  const ctx = document.getElementById('chart-sel-ads-diario');
+  if (ctx && diario.length) {
+    charts['sel-ads-diario'] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: diario.map(d => dateLabel(d.data)),
+        datasets: [
+          {label:'PADS',data:diario.map(d=>d.pads||0),backgroundColor:'#3483FA',borderRadius:3,stack:'s'},
+          {label:'BADS',data:diario.map(d=>d.bads||0),backgroundColor:'#9B59B6',borderRadius:3,stack:'s'}
+        ]
+      },
+      options: {
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:'top'},datalabels:{display:false}},
+        scales:{x:{stacked:true,ticks:{font:{size:10}},grid:{display:false}},y:{stacked:true,ticks:{callback:v=>fmt(v),font:{size:10}},grid:{color:'#F0F0F0'}}}
+      }
+    });
+  }
+}
+
+// ── RENDER CARTEIRA TAB SWITCH ──
+function renderCarteiraTab(section) {
+  if (section === 'geral') renderCarteiraGeral();
+  else if (section === 'alertas') renderCarteiraAlertas();
+  else if (section === 'full') renderCarteiraFull();
+  else if (section === 'ads') renderCarteiraAds();
+  else if (section === 'ranking') renderCarteiraRanking();
+}
+
+function renderSellerTab(sid, section) {
+  if (section === 'geral') renderSellerGeral(sid);
+  else if (section === 'vendas') renderSellerVendas(sid);
+  else if (section === 'full') renderSellerFull(sid);
+  else if (section === 'ads') renderSellerAds(sid);
+}
+
+// ── RENDER TUDO ──
+function renderAll() {
+  const ct = D.carteira || {};
+  // Atualiza header
+  document.getElementById('hdr-sellers').textContent = SELLERS_CFG.length + ' sellers';
+  document.getElementById('hdr-atualizado').textContent = 'Atualizado: ' + (D.gerado_em || '—');
+  document.getElementById('footer-updated').textContent = 'Atualizado: ' + (D.gerado_em || '—');
+
+  // Período label
+  const pLabels = {MTD:'Mês atual',YTD:'Ano atual',Q1:'1º Trimestre',Q2:'2º Trimestre',L30:'Últimos 30 dias',L7:'Últimos 7 dias'};
+  document.getElementById('periodo-label').textContent = pLabels[currentPeriod] || currentPeriod;
+  document.getElementById('ct-periodo-sub').textContent = pLabels[currentPeriod] || '';
+  document.getElementById('footer-periodo').textContent = 'Período: ' + (pLabels[currentPeriod] || currentPeriod);
+
+  renderSidebar();
+  renderCarteiraGeral();
+
+  if (currentSellerId) renderSeller(currentSellerId);
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', renderAll);
+</script>
+</body>
+</html>
